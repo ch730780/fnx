@@ -1,0 +1,8 @@
+# Local-only dependencies for crawling and indexing
+-r requirements.txt
+httpx            # download pages from the site
+beautifulsoup4   # parse HTML
+lxml             # fast parser for beautifulsoup
+trafilatura      # extract main content (drop menus/footers)
+playwright       # headless browser, if the site renders with JavaScript
+tqdm             # progress bars
