@@ -6,3 +6,4 @@ lxml             # fast parser for beautifulsoup
 trafilatura      # extract main content (drop menus/footers)
 playwright       # headless browser, if the site renders with JavaScript
 tqdm             # progress bars
+truststore       # use the OS certificate store (needed behind a TLS-inspecting filter)

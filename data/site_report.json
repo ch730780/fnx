@@ -1,0 +1,18 @@
+{
+  "base_url": "https://www.fnx.co.il",
+  "robots": {
+    "found": false,
+    "disallow": [],
+    "sitemaps": []
+  },
+  "sitemap_url_count": 0,
+  "allowed_url_count": 0,
+  "sections": {},
+  "rendering": [
+    {
+      "url": "https://www.fnx.co.il",
+      "ok": false
+    }
+  ],
+  "sample_urls": []
+}
