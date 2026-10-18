@@ -1,0 +1,6 @@
+# Runtime dependencies for the chat app (installed by the cloud host)
+streamlit        # chat UI
+openai           # embeddings + language model
+pinecone         # vector database + hosted reranker
+rank-bm25        # keyword search (hybrid retrieval)
+python-dotenv    # load API keys from .env locally

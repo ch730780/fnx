@@ -1,0 +1,18 @@
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# Virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Raw crawl output (large; only data/chunks.jsonl is committed)
+data/raw/
+
+# OS files
+.DS_Store
+Thumbs.db
