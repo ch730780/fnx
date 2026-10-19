@@ -1,0 +1,124 @@
+/* ---------- Font ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap');
+
+/* ---------- Color palette (change colors here only) ---------- */
+:root {
+    --primary: #0F4C81;
+    --accent: #14B8A6;
+    --page-bg: #F5F8FC;
+    --card-bg: #FFFFFF;
+    --text: #1F2937;
+    --text-muted: #6B7280;
+    --info-bg: #E8F4FB;
+    --info-border: #8CC8EA;
+    --radius: 16px;
+}
+
+/* ---------- Font everywhere ---------- */
+html, body, .stApp, button, input, textarea {
+    font-family: 'Heebo', sans-serif !important;
+}
+
+/* ---------- Right-to-left layout ---------- */
+.stApp {
+    direction: rtl;
+}
+[data-testid="stMarkdownContainer"],
+[data-testid="stCaptionContainer"],
+[data-testid="stChatInput"] textarea {
+    direction: rtl;
+    text-align: right;
+}
+[data-testid="stMarkdownContainer"] ul,
+[data-testid="stMarkdownContainer"] ol {
+    padding-right: 1.2rem;
+    padding-left: 0;
+}
+
+/* ---------- Hide Streamlit branding ---------- */
+#MainMenu,
+footer,
+[data-testid="stMainMenu"],
+[data-testid="stAppDeployButton"],
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+header[data-testid="stHeader"] {
+    background: transparent;
+}
+
+/* ---------- Page width and top spacing ---------- */
+[data-testid="stMainBlockContainer"] {
+    max-width: 760px;
+    padding-top: 2rem;
+}
+
+/* ---------- Hero banner ---------- */
+.hero {
+    background: linear-gradient(135deg, #E3EEF9 0%, #EAF7F5 100%);
+    border: 1px solid #DCE7F3;
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin-bottom: 0.75rem;
+}
+.hero-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 0.75rem;
+    border-radius: 18px;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(15, 76, 129, 0.25);
+}
+.hero-icon svg {
+    width: 34px;
+    height: 34px;
+}
+.hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.2;
+}
+.hero-subtitle {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    margin: 0.5rem 0 1rem;
+}
+.hero-badge {
+    display: inline-block;
+    background: var(--card-bg);
+    color: #0F766E;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ---------- Disclaimer and footer ---------- */
+.disclaimer,
+.app-footer {
+    text-align: center !important;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.disclaimer {
+    margin: 0 0 1rem;
+}
+.app-footer {
+    margin-top: 2rem;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 480px) {
+    .hero {
+        padding: 1.5rem 1rem;
+    }
+    .hero-title {
+        font-size: 1.5rem;
+    }
+}
