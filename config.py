@@ -23,8 +23,8 @@ EXCLUDED_SECTIONS = ["en", "tags", "404", "sitemap"]   # site sections we don't 
 # Models
 EMBEDDING_MODEL = "text-embedding-3-large"
 EMBEDDING_DIM = 3072
-CHAT_MODEL = ""                # chosen after checking which models the account can access
-REWRITE_MODEL = ""             # small model for rewriting follow-up questions
+CHAT_MODEL = "gpt-4.1"         # writes the answer: follows instructions well, fast, supports JSON output
+REWRITE_MODEL = "gpt-4.1-mini" # small and fast: rewrites follow-up questions into full questions
 
 # Pinecone
 PINECONE_INDEX = "fnx"
