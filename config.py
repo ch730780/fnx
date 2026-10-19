@@ -18,6 +18,7 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 BASE_URL = "https://www.fnx.co.il"
 CRAWL_DELAY_SEC = 1.5          # delay between requests (polite crawling)
 USER_AGENT = "Mozilla/5.0 (compatible; FnxRagBot/0.1; hackathon RAG project)"
+EXCLUDED_SECTIONS = ["en", "tags", "404", "sitemap"]   # site sections we don't crawl
 
 # Models
 EMBEDDING_MODEL = "text-embedding-3-large"
