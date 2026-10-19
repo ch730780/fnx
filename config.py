@@ -2,6 +2,12 @@ import os
 
 from dotenv import load_dotenv
 
+try:
+    import truststore
+    truststore.inject_into_ssl()   # use the Windows certificate store (needed behind a TLS-inspecting filter)
+except ImportError:
+    pass                           # not installed (e.g. in the cloud) - default certificates are fine
+
 load_dotenv()  # locally: reads .env; in the cloud: no-op
 
 # API keys: read from environment variables (works locally, on Streamlit Cloud and on AWS)
@@ -11,6 +17,8 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 # Site
 BASE_URL = "https://www.fnx.co.il"
 CRAWL_DELAY_SEC = 1.5          # delay between requests (polite crawling)
+USER_AGENT = "Mozilla/5.0 (compatible; FnxRagBot/0.1; hackathon RAG project)"
+EXCLUDED_SECTIONS = ["en", "tags", "404", "sitemap"]   # site sections we don't crawl
 
 # Models
 EMBEDDING_MODEL = "text-embedding-3-large"
