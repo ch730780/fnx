@@ -1,6 +1,6 @@
 # Runtime dependencies for the chat app (installed by the cloud host)
-streamlit        # chat UI
-openai           # embeddings + language model
-pinecone         # vector database + hosted reranker
-rank-bm25        # keyword search (hybrid retrieval)
-python-dotenv    # load API keys from .env locally
+# Versions are pinned to exactly what was tested locally
+streamlit==1.66.0      # chat UI
+openai==3.35.1         # embeddings + language model
+pinecone==10.0.0       # vector database + hosted reranker
+python-dotenv==1.2.4   # load API keys from .env locally
