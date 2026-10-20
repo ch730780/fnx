@@ -199,6 +199,12 @@ header[data-testid="stHeader"] {
     padding: 8px 14px;
     border: none !important;
 }
+/* Streamlit wraps the messages area in another box; it must be allowed to shrink too,
+   otherwise long chats grow past the window instead of scrolling */
+.st-key-chat_panel > [data-testid="stLayoutWrapper"]:has(> .st-key-chat_body) {
+    flex: 1 1 auto;
+    min-height: 0;
+}
 
 /* Greeting while the chat is empty */
 .chat-welcome {
