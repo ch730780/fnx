@@ -25,6 +25,7 @@ EMBEDDING_MODEL = "text-embedding-3-large"
 EMBEDDING_DIM = 3072
 CHAT_MODEL = "gpt-4.1"         # writes the answer: follows instructions well, fast, supports JSON output
 REWRITE_MODEL = "gpt-4.1-mini" # small and fast: rewrites follow-up questions into full questions
+FALLBACK_MODEL = "gpt-4.1-mini" # used only if CHAT_MODEL fails (error 429, outage)
 
 # Pinecone
 PINECONE_INDEX = "fnx"
@@ -32,4 +33,6 @@ PINECONE_INDEX = "fnx"
 # Retrieval
 TOP_K = 20                     # candidates from the first search
 RERANK_TOP_N = 5               # kept after reranking
-MIN_RELEVANCE = 0.3            # below this the bot refuses; tuned from eval results
+USE_RERANKER = True            # False = keep the vector search order (faster, usually less precise)
+MIN_RELEVANCE = 0.5            # chunks below this reranker score are dropped; measured on 40 eval questions:
+                               # answerable questions scored 0.93+, questions not on the site 0.21 or less

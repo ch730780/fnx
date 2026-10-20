@@ -32,6 +32,8 @@ def retrieve(question: str) -> list[dict]:
     candidates = [{"id": match.id, "score": match.score, **match.metadata} for match in result.matches]
     if not candidates:
         return []
+    if not config.USE_RERANKER:
+        return candidates[:config.RERANK_TOP_N]
 
     try:
         reranked = pc.inference.rerank(
