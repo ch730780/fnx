@@ -1,5 +1,6 @@
 """Streamlit chat UI for the Phoenix (fnx.co.il) website bot."""
 
+import base64
 import logging
 from pathlib import Path
 
@@ -9,7 +10,10 @@ from rag.answer import answer
 from rag.retrieve import clients
 
 MAX_QUESTIONS_PER_SESSION = 30
-CSS_PATH = Path(__file__).parent / "assets" / "style.css"
+ASSETS = Path(__file__).parent / "assets"
+CSS_PATH = ASSETS / "style.css"
+HOME_PATH = ASSETS / "home.html"
+LOGO_PATH = ASSETS / "fnx-logo.png"
 CUSTOMER_SERVICE_URL = "https://www.fnx.co.il/customer-service/"
 ERROR_MESSAGE = "משהו השתבש, נסי שוב בעוד רגע."
 LIMIT_MESSAGE = "הגעת למגבלת השאלות לשיחה. תודה שניסית את הבוט!"
@@ -20,12 +24,6 @@ NOT_FOUND_TITLES = {
     "advice": "ייעוץ אישי לא מופיע באתר",
     "off_topic": "הנושא לא מופיע באתר",
 }
-
-EXAMPLE_QUESTIONS = [
-    ("💧", "איך מגישים תביעה על נזקי מים?"),
-    ("✈️", 'מה כולל ביטוח נסיעות לחו"ל?'),
-    ("📄", "האם הפוליסה שלי מכסה נזילה?"),
-]
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +40,8 @@ def init_state() -> None:
         st.session_state.messages = []
     if "question_count" not in st.session_state:
         st.session_state.question_count = 0
+    if "chat_open" not in st.session_state:
+        st.session_state.chat_open = False
 
 
 def start_new_chat() -> None:
@@ -49,9 +49,12 @@ def start_new_chat() -> None:
     st.session_state.messages = []
 
 
-def queue_question(question: str) -> None:
-    """Remember a clicked example question so the next run handles it."""
-    st.session_state.pending_question = question
+def open_chat() -> None:
+    st.session_state.chat_open = True
+
+
+def close_chat() -> None:
+    st.session_state.chat_open = False
 
 
 def limit_reached() -> bool:
@@ -67,60 +70,65 @@ def build_history() -> list[dict]:
     ]
 
 
-def render_sidebar() -> None:
-    with st.sidebar:
-        st.button("🔄 שיחה חדשה", on_click=start_new_chat, width="stretch")
-        st.markdown("### איך זה עובד")
-        st.markdown(
-            "- הבוט מחפש **רק** באתר הפניקס (fnx.co.il)\n"
-            "- כל תשובה מגיעה עם קישור לעמוד המקור\n"
-            "- כשהמידע לא מופיע באתר — הבוט אומר זאת במפורש\n"
-            "- הבוט לא ניגש לפוליסות או לפרטים אישיים"
-        )
-        st.caption("המידע נאסף מהאתר בתאריך: —")
-        remaining = MAX_QUESTIONS_PER_SESSION - st.session_state.question_count
-        st.caption(f"שאלות שנותרו: {max(remaining, 0)} מתוך {MAX_QUESTIONS_PER_SESSION}")
-
-
-HERO_ICON_SVG = (
-    '<svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" '
-    'stroke-linecap="round" stroke-linejoin="round">'
-    '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>'
-    '<path d="M8.5 12l2.5 2.5 4.5-5"/>'
+INFO_SVG = (
+    '<svg viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" '
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'
     "</svg>"
 )
 
 
-def render_header() -> None:
-    """Hero banner with our icon, title, subtitle, badge and disclaimer."""
+def logo_src() -> str:
+    """The Phoenix logo (white text) as an inline image, so st.markdown can show it."""
+    return "data:image/png;base64," + base64.b64encode(LOGO_PATH.read_bytes()).decode()
+
+
+def render_homepage() -> None:
+    """A home page behind the chat, so the bot is shown in context."""
+    html = HOME_PATH.read_text(encoding="utf-8").replace("{logo}", logo_src())
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def render_launcher() -> None:
+    """The closed bot: one orange button in the corner that opens the chat."""
+    st.button("צ'אט AI", key="open_chat", icon=":material/chat:", on_click=open_chat)
+
+
+def render_chat_header() -> None:
+    """Dark blue bar: logo, name, new-chat and close buttons."""
+    with st.container(key="chat_header", horizontal=True, vertical_alignment="center"):
+        st.markdown(
+            f"""<div class="chat-title">
+<img class="chat-logo" src="{logo_src()}" alt="הפניקס">
+<div class="chat-divider"></div>
+<div><div class="chat-name">הבוט של האתר</div><div class="chat-sub">מבוסס בינה מלאכותית</div></div>
+</div>""",
+            unsafe_allow_html=True,
+            width="stretch",
+        )
+        st.button("שיחה חדשה", key="new_chat", icon=":material/add:", on_click=start_new_chat)
+        st.button(":material/close:", key="close_chat", help="סגירת הצ'אט", on_click=close_chat)
+
+
+def render_disclaimer() -> None:
     st.markdown(
-        f"""<div class="hero">
-<div class="hero-icon">{HERO_ICON_SVG}</div>
-<div class="hero-title">הבוט של אתר הפניקס</div>
-<p class="hero-subtitle">עונה רק לפי המידע שבאתר fnx.co.il, עם קישור למקור</p>
-<span class="hero-badge">✓ מבוסס רק על fnx.co.il</span>
-</div>
-<p class="disclaimer">פרויקט האקתון — לא שירות רשמי של הפניקס. אין לראות בתשובות ייעוץ אישי.</p>""",
+        f"""<div class="chat-disclaimer">{INFO_SVG}
+<p>זהו אינו שירות רשמי של הפניקס, והתשובות אינן מהוות ייעוץ אישי.</p>
+</div>""",
         unsafe_allow_html=True,
     )
 
 
-def render_footer() -> None:
-    st.markdown('<p class="app-footer">נבנה בהאקתון AI קוד פתוח 2026</p>', unsafe_allow_html=True)
-
-
-def render_examples() -> None:
-    """Show clickable example questions (only when the chat is empty)."""
-    st.markdown("**אפשר להתחיל מאחת השאלות האלה:**")
-    columns = st.columns(len(EXAMPLE_QUESTIONS))
-    for column, (icon, question) in zip(columns, EXAMPLE_QUESTIONS):
-        with column:
-            st.button(
-                f"{icon} {question}",
-                on_click=queue_question,
-                args=(question,),
-                width="stretch",
-            )
+def render_welcome() -> None:
+    """Greeting shown while the chat is still empty."""
+    st.markdown(
+        f"""<div class="chat-welcome">
+<div class="chat-welcome-logo"><img src="{logo_src()}" alt="הפניקס"></div>
+<h2>שלום! אני הבוט של אתר הפניקס</h2>
+<p>אפשר לשאול אותי על ביטוח רכב, דירה, בריאות, נסיעות, חיסכון ופנסיה. אני עונה לפי המידע שבאתר הפניקס.</p>
+</div>""",
+        unsafe_allow_html=True,
+    )
 
 
 def render_sources(sources: list[dict]) -> None:
@@ -187,28 +195,36 @@ def handle_question(question: str) -> None:
     render_message(reply, len(messages) - 1)
 
 
+def render_chat() -> None:
+    """The open bot: a chat window in the corner of the page."""
+    with st.container(key="chat_panel", gap=None):
+        render_chat_header()
+        render_disclaimer()
+        body = st.container(key="chat_body", height="stretch", autoscroll=True)
+        typed = st.chat_input("שאלי שאלה על ביטוח, תביעות, חיסכון...", disabled=limit_reached())
+
+    with body:
+        if not st.session_state.messages and not typed:
+            render_welcome()
+        for index, message in enumerate(st.session_state.messages):
+            render_message(message, index)
+        if typed:
+            handle_question(typed)
+        if limit_reached():
+            st.warning(LIMIT_MESSAGE)
+
+
 def main() -> None:
-    st.set_page_config(page_title="הבוט של אתר הפניקס", page_icon="💬", layout="centered")
+    st.set_page_config(page_title="הבוט של אתר הפניקס", page_icon="💬", layout="wide")
     load_css()
     init_state()
-    render_sidebar()
-    render_header()
+    render_homepage()
 
-    for index, message in enumerate(st.session_state.messages):
-        render_message(message, index)
+    if st.session_state.chat_open:
+        render_chat()
+    else:
+        render_launcher()
 
-    typed = st.chat_input("שאלי שאלה על ביטוח, תביעות, חיסכון...", disabled=limit_reached())
-    question = typed or st.session_state.pop("pending_question", None)
-
-    if question:
-        handle_question(question)
-    elif not st.session_state.messages:
-        render_examples()
-
-    if limit_reached():
-        st.warning(LIMIT_MESSAGE)
-
-    render_footer()
     try:
         clients()   # connect to OpenAI and Pinecone now, so the first question doesn't wait for it
     except Exception:

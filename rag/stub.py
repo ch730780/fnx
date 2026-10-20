@@ -7,12 +7,16 @@ tested without OpenAI / Pinecone. Later, app.py will switch to
 
 Keyword triggers (to exercise every UI state):
     "שגיאה"        -> raises RuntimeError (error handling)
-    "הפוליסה שלי"  -> answerable=False (personal policy questions)
+    "הפוליסה שלי"  -> refusal, reason="personal"
+    "ייעוץ"        -> refusal, reason="advice"
+    "מזג אוויר"    -> refusal, reason="off_topic"
     "תביעה"        -> normal answer with 2 sample sources
-    anything else  -> answerable=False (not on the site)
+    anything else  -> refusal, reason="not_found"
 """
 
 import time
+
+from rag.answer import refusal
 
 FAKE_DELAY_SECONDS = 1.5
 CLAIMS_BASE_URL = "https://www.fnx.co.il/claims-customer-service/"
@@ -27,15 +31,13 @@ def answer(question: str, history: list[dict]) -> dict:
         raise RuntimeError("Simulated failure for UI testing")
 
     if "הפוליסה שלי" in question:
-        return {
-            "answer": (
-                "אני לא יכול לבדוק פרטים של פוליסה אישית. "
-                "אני עונה רק על מידע כללי שמופיע באתר הפניקס. "
-                "כדי לבדוק מה הפוליסה שלך מכסה, כדאי לפנות לשירות הלקוחות."
-            ),
-            "sources": [],
-            "answerable": False,
-        }
+        return refusal("personal")
+
+    if "ייעוץ" in question:
+        return refusal("advice")
+
+    if "מזג אוויר" in question:
+        return refusal("off_topic")
 
     if "תביעה" in question:
         return {
@@ -51,8 +53,4 @@ def answer(question: str, history: list[dict]) -> dict:
             "answerable": True,
         }
 
-    return {
-        "answer": "המידע הזה לא מופיע באתר הפניקס, ולכן אני לא יכול לענות עליו.",
-        "sources": [],
-        "answerable": False,
-    }
+    return refusal("not_found")
