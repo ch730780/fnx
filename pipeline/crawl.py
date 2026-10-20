@@ -1,10 +1,11 @@
 """Download every public page listed in the sitemap into data/raw/ (one JSON file per page).
 
 Run: python -m pipeline.crawl
-Re-running skips pages that were already downloaded.
+Re-running skips pages that were already downloaded; add --refresh to download every page again.
 """
 import hashlib
 import json
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -56,9 +57,10 @@ def download(client: httpx.Client, url: str) -> httpx.Response | None:
     return None
 
 
-def main() -> None:
+def main(refresh: bool = False) -> None:
+    """Download the pages. refresh=True downloads every page again and removes pages that left the site."""
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    log = {"saved": [], "already_downloaded": 0, "failed": [], "skipped_non_html": []}
+    log = {"saved": [], "already_downloaded": 0, "failed": [], "skipped_non_html": [], "removed": []}
     headers = {"User-Agent": config.USER_AGENT, "Accept-Language": "he-IL,he;q=0.9"}
 
     with httpx.Client(headers=headers, follow_redirects=True, timeout=30) as client:
@@ -69,13 +71,16 @@ def main() -> None:
 
         for url in tqdm(urls):
             path = RAW_DIR / f"{url_to_id(url)}.json"
-            if path.exists():
+            if path.exists() and not refresh:
                 log["already_downloaded"] += 1
                 continue
 
             response = download(client, url)
             if response is None or response.status_code != 200:
                 log["failed"].append({"url": url, "status": response.status_code if response else None})
+                if refresh and response is not None and response.status_code in (404, 410):
+                    path.unlink(missing_ok=True)          # the site says the page is gone
+                    log["removed"].append(url)
                 continue
 
             if "text/html" not in response.headers.get("content-type", ""):
@@ -92,11 +97,19 @@ def main() -> None:
             path.write_text(json.dumps(page, ensure_ascii=False), encoding="utf-8")
             log["saved"].append(url)
 
+    if refresh:                                           # pages that are no longer in the sitemap
+        current = {url_to_id(url) for url in urls}
+        for path in RAW_DIR.glob("*.json"):
+            if path.stem not in current:
+                path.unlink()
+                log["removed"].append(path.stem)
+
     LOG_PATH.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"saved: {len(log['saved'])}  |  already downloaded: {log['already_downloaded']}  |  "
-          f"failed: {len(log['failed'])}  |  non-HTML skipped: {len(log['skipped_non_html'])}")
+          f"failed: {len(log['failed'])}  |  non-HTML skipped: {len(log['skipped_non_html'])}  |  "
+          f"removed: {len(log['removed'])}")
     print(f"log: {LOG_PATH}")
 
 
 if __name__ == "__main__":
-    main()
+    main(refresh="--refresh" in sys.argv)

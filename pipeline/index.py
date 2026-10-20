@@ -30,13 +30,8 @@ def get_index(pc: Pinecone):
     return pc.Index(config.PINECONE_INDEX)
 
 
-def main() -> None:
-    with CHUNKS_PATH.open(encoding="utf-8") as f:
-        chunks = [json.loads(line) for line in f]
-
-    openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
-    index = get_index(Pinecone(api_key=config.PINECONE_API_KEY))
-
+def upload(chunks: list[dict], openai_client: OpenAI, index) -> None:
+    """Embed the chunks (OpenAI) and store them in Pinecone, in batches."""
     for start in tqdm(range(0, len(chunks), EMBED_BATCH)):
         batch = chunks[start:start + EMBED_BATCH]
         response = openai_client.embeddings.create(
@@ -52,6 +47,14 @@ def main() -> None:
             for chunk, item in zip(batch, response.data)
         ]
         index.upsert(vectors=vectors, batch_size=UPSERT_BATCH, show_progress=False)
+
+
+def main() -> None:
+    with CHUNKS_PATH.open(encoding="utf-8") as f:
+        chunks = [json.loads(line) for line in f]
+
+    index = get_index(Pinecone(api_key=config.PINECONE_API_KEY))
+    upload(chunks, OpenAI(api_key=config.OPENAI_API_KEY), index)
 
     stats = index.describe_index_stats()
     print(f"chunks sent: {len(chunks)}  |  vectors in index: {stats.total_vector_count}")

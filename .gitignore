@@ -13,6 +13,7 @@ __pycache__/
 # Raw crawl output (large; only data/chunks.jsonl is committed)
 data/raw/
 data/pages.jsonl
+data/chunks.previous.jsonl
 
 # OS files
 .DS_Store
