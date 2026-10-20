@@ -3,13 +3,16 @@
 app.py calls answer(question, history). Try it from the terminal: python -m rag.answer "<question>"
 """
 import json
+import logging
 import sys
+
+import openai
 
 import config
 from rag.prompts import REWRITE_PROMPT, SYSTEM_PROMPT
 from rag.retrieve import clients, retrieve
 
-HISTORY_MESSAGES = 6   # how many recent chat messages the rewrite model sees (3 questions + 3 answers)
+HISTORY_MESSAGES = 10   # how many recent chat messages the rewrite model sees (5 questions + 5 answers)
 MAX_SOURCES = 3        # at most this many links under an answer
 
 REFUSALS = {
@@ -20,6 +23,8 @@ REFUSALS = {
               "לייעוץ מותאם אישית, אפשר לפנות לשירות הלקוחות.",
     "off_topic": "אני עונה רק על שאלות בנושאים שמופיעים באתר הפניקס, כמו ביטוח, חיסכון, פנסיה ותביעות.",
 }
+
+logger = logging.getLogger(__name__)
 
 
 def standalone_question(question: str, history: list[dict]) -> str:
@@ -53,22 +58,32 @@ def refusal(kind: str) -> dict:
     return {"answer": REFUSALS[kind], "sources": [], "answerable": False, "reason": kind}
 
 
+def ask_model(messages: list[dict]) -> dict:
+    """Get the JSON answer from CHAT_MODEL; if it fails (error 429, outage), try FALLBACK_MODEL once."""
+    openai_client, _, _ = clients()
+
+    def call(model: str) -> dict:
+        response = openai_client.chat.completions.create(
+            model=model, temperature=0, response_format={"type": "json_object"}, messages=messages,
+        )
+        return json.loads(response.choices[0].message.content)
+
+    try:
+        return call(config.CHAT_MODEL)
+    except openai.APIError:
+        logger.exception(f"{config.CHAT_MODEL} failed - trying {config.FALLBACK_MODEL}")
+        return call(config.FALLBACK_MODEL)
+
+
 def answer(question: str, history: list[dict]) -> dict:
     """Answer one chat question: {"answer": str, "sources": [{"title", "url"}], "answerable": bool}."""
     full_question = standalone_question(question, history)
     chunks = [chunk for chunk in retrieve(full_question) if chunk["score"] >= config.MIN_RELEVANCE]
 
-    openai_client, _, _ = clients()
-    response = openai_client.chat.completions.create(
-        model=config.CHAT_MODEL,
-        temperature=0,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"שאלה: {full_question}\n\nקטעים מהאתר:\n{format_chunks(chunks)}"},
-        ],
-    )
-    result = json.loads(response.choices[0].message.content)
+    result = ask_model([
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": f"שאלה: {full_question}\n\nקטעים מהאתר:\n{format_chunks(chunks)}"},
+    ])
 
     kind = result.get("question_type")
     if kind != "info":
