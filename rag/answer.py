@@ -24,6 +24,9 @@ REFUSALS = {
     "off_topic": "אני עונה רק על שאלות בנושאים שמופיעים באתר הפניקס, כמו ביטוח, חיסכון, פנסיה ותביעות.",
 }
 
+PERSONAL_OFFER = ("אני לא יכול לבדוק את הפוליסה האישית שלך – את זה בודקים בשירות הלקוחות. "
+                  "אבל אני יכול להסביר מה כתוב באתר בנושא: {question} רוצה שאסביר?")
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,6 +89,12 @@ def answer(question: str, history: list[dict]) -> dict:
     ])
 
     kind = result.get("question_type")
+    if kind == "personal":
+        general = (result.get("general_question") or "").strip()
+        if result.get("coverage") in ("full", "partial") and general:
+            return {"answer": PERSONAL_OFFER.format(question=general), "sources": [],
+                    "answerable": False, "reason": "personal"}
+        return refusal("personal")
     if kind != "info":
         return refusal(kind if kind in REFUSALS else "off_topic")
 
