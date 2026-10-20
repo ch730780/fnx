@@ -209,7 +209,10 @@ def main() -> None:
         st.warning(LIMIT_MESSAGE)
 
     render_footer()
-    clients()   # connect to OpenAI and Pinecone now, so the first question doesn't wait for it
+    try:
+        clients()   # connect to OpenAI and Pinecone now, so the first question doesn't wait for it
+    except Exception:
+        logger.exception("warm-up failed")   # the page still loads; full details go to the server log
 
 
 if __name__ == "__main__":

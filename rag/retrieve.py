@@ -2,6 +2,7 @@
 
 Used by rag/answer.py. Try it from the terminal: python -m rag.retrieve "<question>"
 """
+import logging
 import sys
 from functools import lru_cache
 
@@ -11,6 +12,8 @@ from pinecone import Pinecone
 import config
 
 RERANK_MODEL = "bge-reranker-v2-m3"   # Pinecone's hosted multilingual reranker
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=1)
@@ -26,18 +29,22 @@ def retrieve(question: str) -> list[dict]:
 
     embedding = openai_client.embeddings.create(model=config.EMBEDDING_MODEL, input=question).data[0].embedding
     result = index.query(vector=embedding, top_k=config.TOP_K, include_metadata=True)
-    candidates = [{"id": match.id, **match.metadata} for match in result.matches]
+    candidates = [{"id": match.id, "score": match.score, **match.metadata} for match in result.matches]
     if not candidates:
         return []
 
-    reranked = pc.inference.rerank(
-        model=RERANK_MODEL,
-        query=question,
-        documents=[chunk["text"] for chunk in candidates],
-        top_n=config.RERANK_TOP_N,
-        return_documents=False,
-        parameters={"truncate": "END"},   # a chunk longer than the model's limit is cut, not rejected
-    )
+    try:
+        reranked = pc.inference.rerank(
+            model=RERANK_MODEL,
+            query=question,
+            documents=[chunk["text"] for chunk in candidates],
+            top_n=config.RERANK_TOP_N,
+            return_documents=False,
+            parameters={"truncate": "END"},   # a chunk longer than the model's limit is cut, not rejected
+        )
+    except Exception:
+        logger.exception("rerank failed - using the vector search order")
+        return candidates[:config.RERANK_TOP_N]
     return [{**candidates[row.index], "score": row.score} for row in reranked.data]
 
 
