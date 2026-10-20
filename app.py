@@ -5,13 +5,21 @@ from pathlib import Path
 
 import streamlit as st
 
-from rag.stub import answer   # later: from rag.answer import answer
+from rag.answer import answer
+from rag.retrieve import clients
 
 MAX_QUESTIONS_PER_SESSION = 30
 CSS_PATH = Path(__file__).parent / "assets" / "style.css"
 CUSTOMER_SERVICE_URL = "https://www.fnx.co.il/customer-service/"
 ERROR_MESSAGE = "משהו השתבש, נסי שוב בעוד רגע."
 LIMIT_MESSAGE = "הגעת למגבלת השאלות לשיחה. תודה שניסית את הבוט!"
+
+NOT_FOUND_TITLES = {
+    "not_found": "המידע לא מופיע באתר",
+    "personal": "מידע אישי לא מופיע באתר",
+    "advice": "ייעוץ אישי לא מופיע באתר",
+    "off_topic": "הנושא לא מופיע באתר",
+}
 
 EXAMPLE_QUESTIONS = [
     ("💧", "איך מגישים תביעה על נזקי מים?"),
@@ -123,9 +131,10 @@ def render_sources(sources: list[dict]) -> None:
         st.markdown(f"🔗 [{source['title']}]({source['url']})")
 
 
-def render_not_found(text: str, index: int) -> None:
-    """Card for questions the website does not answer."""
-    st.info(f"**המידע לא מופיע באתר**\n\n{text}", icon="ℹ️")
+def render_not_found(text: str, index: int, reason: str | None) -> None:
+    """Card for questions the website does not answer, titled by the reason."""
+    title = NOT_FOUND_TITLES.get(reason, NOT_FOUND_TITLES["not_found"])
+    st.info(f"**{title}**\n\n{text}", icon="ℹ️")
     st.link_button("פנייה לשירות לקוחות", CUSTOMER_SERVICE_URL, key=f"service_{index}")
 
 
@@ -140,7 +149,7 @@ def render_message(message: dict, index: int) -> None:
             st.markdown(message["content"])
             render_sources(message["sources"])
         else:
-            render_not_found(message["content"], index)
+            render_not_found(message["content"], index, message.get("reason"))
 
 
 def ask_bot(question: str, history: list[dict]) -> dict:
@@ -152,7 +161,8 @@ def ask_bot(question: str, history: list[dict]) -> dict:
         return {"role": "assistant", "content": ERROR_MESSAGE,
                 "sources": [], "answerable": False, "error": True}
     return {"role": "assistant", "content": result["answer"],
-            "sources": result["sources"], "answerable": result["answerable"]}
+            "sources": result["sources"], "answerable": result["answerable"],
+            "reason": result.get("reason")}
 
 
 def handle_question(question: str) -> None:
@@ -199,6 +209,7 @@ def main() -> None:
         st.warning(LIMIT_MESSAGE)
 
     render_footer()
+    clients()   # connect to OpenAI and Pinecone now, so the first question doesn't wait for it
 
 
 if __name__ == "__main__":
