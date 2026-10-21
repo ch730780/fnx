@@ -44,5 +44,6 @@
   {"id": 43, "type": "תסריט מההנחיות - הצעה", "question": "האם הפוליסה שלי מכסה את זה?", "expect": "refuse", "reason": "personal", "follow_up": true},
   {"id": 44, "type": "תסריט מההנחיות - הסכמה", "question": "כן", "expect": "answer", "url": "apartment", "follow_up": true},
   {"id": 45, "type": "סירוב - שאלה עמומה", "question": "כמה זה עולה?", "expect": "refuse", "reason": "unclear"},
-  {"id": 46, "type": "סירוב - תחום רחב בלי סקירה באתר", "question": "ביטוח?", "expect": "refuse", "reason": "unclear"}
+  {"id": 46, "type": "סירוב - תחום רחב בלי סקירה באתר", "question": "ביטוח?", "expect": "refuse", "reason": "unclear"},
+  {"id": 47, "type": "סירוב - תחום רחב בלי סקירה באתר", "question": "ביטוח", "expect": "refuse", "reason": "unclear"}
 ]
