@@ -28,6 +28,8 @@ REFUSALS = {
 PERSONAL_OFFER = ("אני לא יכול לבדוק את הפוליסה האישית שלך – את זה בודקים בשירות הלקוחות. "
                   "אבל אני יכול להסביר מה כתוב באתר בנושא: {question} רוצה שאסביר?")
 
+CLOSING = "בשמחה! אפשר לשאול כל שאלה נוספת על המידע באתר הפניקס."
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,6 +92,8 @@ def answer(question: str, history: list[dict]) -> dict:
     ])
 
     kind = result.get("question_type")
+    if kind == "closing":
+        return {"answer": CLOSING, "sources": [], "answerable": True, "reason": "closing"}
     if kind == "personal":
         general = (result.get("general_question") or "").strip()
         if result.get("coverage") in ("full", "partial") and general:
@@ -107,7 +111,7 @@ def answer(question: str, history: list[dict]) -> dict:
         return refusal("not_found")
 
     sources = list({chunk["url"]: {"title": chunk["title"], "url": chunk["url"]} for chunk in used}.values())[:MAX_SOURCES]
-    if result.get("main_found") is False:   # the main thing asked is not on the site: a "not found" card, with what the site does say
+    if result.get("main_missing") is True:   # the answer says the main thing asked is not on the site: a "not found" card
         return {"answer": result["answer"], "sources": sources, "answerable": False, "reason": "not_found"}
     return {"answer": result["answer"], "sources": sources, "answerable": True}
 

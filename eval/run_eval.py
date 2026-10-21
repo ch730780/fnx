@@ -18,9 +18,19 @@ QUESTIONS_PATH = Path("eval/questions.json")
 
 
 def check(item: dict, result: dict) -> bool:
-    """True if the bot did what we expected: refused, or answered with the expected page as a source."""
+    """True if the bot did what we expected: the right kind of refusal, or an answer from the expected page."""
+    if "קטע" in result["answer"]:
+        return False                                       # internal word: the user never sees the chunks
+    if item["expect"] == "closing":
+        return result.get("reason") == "closing"
     if item["expect"] == "refuse":
-        return not result["answerable"]
+        if result["answerable"]:
+            return False
+        if "reason" in item and result.get("reason") != item["reason"]:
+            return False                                   # e.g. expected a clarifying question, got "not on the site"
+        if "offer" in item and ("רוצה שאסביר" in result["answer"]) != item["offer"]:
+            return False                                   # expected the "want me to explain?" offer, or expected none
+        return True
     return result["answerable"] and any(item["url"] in source["url"] for source in result["sources"])
 
 
@@ -48,13 +58,14 @@ def main() -> None:
         ok = check(item, result)
 
         times.append(seconds)
-        totals[item["expect"]] += 1
-        passed[item["expect"]] += ok
+        group = "answer" if item["expect"] == "answer" else "refuse"   # a closing reply counts with the refusals
+        totals[group] += 1
+        passed[group] += ok
         history += [{"role": "user", "content": item["question"]},
                     {"role": "assistant", "content": result["answer"]}]
 
         did = "ענה" if result["answerable"] else f"סירב ({result.get('reason')})"
-        expected = "לענות" if item["expect"] == "answer" else "לסרב"
+        expected = {"answer": "לענות", "refuse": "לסרב", "closing": "לסיים בנימוס"}[item["expect"]]
         sources = [source["url"] for source in result["sources"]]
         rows.append(f"| {item['id']} | {'✅' if ok else '❌'} | {cell(item['question'])} | {expected} "
                     f"| {did} | {seconds:.1f} | {cell(result['answer'])} | {'<br>'.join(sources)} |")
