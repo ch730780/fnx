@@ -22,6 +22,7 @@ REFUSALS = {
     "advice": "אני לא נותן ייעוץ או המלצה אישית, אלא רק מידע כללי מהאתר. "
               "לייעוץ מותאם אישית, אפשר לפנות לשירות הלקוחות.",
     "off_topic": "אני עונה רק על שאלות בנושאים שמופיעים באתר הפניקס, כמו ביטוח, חיסכון, פנסיה ותביעות.",
+    "unclear": "לא ברור לי על איזה מוצר או שירות השאלה. אפשר לכתוב אותה שוב, עם שם המוצר?",
 }
 
 PERSONAL_OFFER = ("אני לא יכול לבדוק את הפוליסה האישית שלך – את זה בודקים בשירות הלקוחות. "
@@ -95,6 +96,9 @@ def answer(question: str, history: list[dict]) -> dict:
             return {"answer": PERSONAL_OFFER.format(question=general), "sources": [],
                     "answerable": False, "reason": "personal"}
         return refusal("personal")
+    if kind == "unclear":
+        clarify = (result.get("clarify") or "").strip()
+        return {"answer": clarify or REFUSALS["unclear"], "sources": [], "answerable": False, "reason": "unclear"}
     if kind != "info":
         return refusal(kind if kind in REFUSALS else "off_topic")
 

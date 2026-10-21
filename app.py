@@ -28,6 +28,7 @@ NOT_FOUND_TITLES = {
     "personal": "מידע אישי לא מופיע באתר",
     "advice": "ייעוץ אישי לא מופיע באתר",
     "off_topic": "הנושא לא מופיע באתר",
+    "unclear": "המידע לא מופיע באתר",
 }
 
 logger = logging.getLogger(__name__)
