@@ -5,11 +5,14 @@ import json
 import logging
 from datetime import datetime
 from functools import lru_cache
+from html import escape
 from pathlib import Path
 
 import streamlit as st
 
+import config
 from rag.answer import answer
+from rag.gaps import load_groups
 from rag.retrieve import clients
 
 MAX_QUESTIONS_PER_SESSION = 30
@@ -187,7 +190,7 @@ def render_message(message: dict, index: int) -> None:
 def ask_bot(question: str, history: list[dict]) -> dict:
     """Call the bot and turn any failure into a friendly error message."""
     try:
-        result = answer(question, history)
+        result = answer(question, history, save_gaps=True)
     except Exception:
         logger.exception("answer() failed")  # full details go to the server log only
         return {"role": "assistant", "content": ERROR_MESSAGE,
@@ -238,9 +241,63 @@ def render_chat() -> None:
             st.warning(LIMIT_MESSAGE)
 
 
+def show_date(iso: str) -> str:
+    """2026-10-21 -> 21.10.2026"""
+    return datetime.strptime(iso, "%Y-%m-%d").strftime("%d.%m.%Y")
+
+
+def render_gaps_page() -> None:
+    """Admin view (?view=gaps): questions the site doesn't answer, grouped by meaning."""
+    st.markdown(
+        """<div class="gaps-header">
+<h1>מפת פערי תוכן</h1>
+<p>שאלות שגולשים שאלו והבוט ענה עליהן "המידע לא מופיע באתר" – מקובצות לפי משמעות, מהנפוצה ביותר. כל נושא הוא הצעה לתוכן שכדאי להוסיף לאתר.</p>
+<p class="gaps-note">העמוד נפתח בלשונית נפרדת – הצ'אט נשאר פתוח בלשונית של האתר.</p>
+</div>""",
+        unsafe_allow_html=True,
+    )
+    password = st.text_input("סיסמה", type="password", placeholder="הקלידי סיסמה ולחצי Enter")
+    if not config.ADMIN_PASSWORD or password != config.ADMIN_PASSWORD:
+        if password:
+            st.error("הסיסמה שגויה..")
+        return
+    with st.spinner("טוען את השאלות..."):
+        groups = load_groups()
+    if not groups:
+        st.info("עוד לא נשמרו שאלות.")
+        return
+
+    total = sum(len(group["questions"]) for group in groups)
+    latest = max(item["date"] for group in groups for item in group["questions"])
+    st.markdown(
+        f"""<div class="gaps-stats">
+<div><b>{total}</b><span>שאלות בלי תשובה</span></div>
+<div><b>{len(groups)}</b><span>נושאים</span></div>
+<div><b>{show_date(latest)}</b><span>השאלה האחרונה</span></div>
+</div>""",
+        unsafe_allow_html=True,
+    )
+    for rank, group in enumerate(groups):
+        questions = sorted(group["questions"], key=lambda item: item["date"], reverse=True)
+        with st.container(key=f"gap_{rank}"):
+            st.markdown(
+                f'<div class="gap-title"><span class="gap-count">{len(questions)}</span>'
+                f'{escape(group["questions"][0]["question"])}</div>'
+                f'<div class="gap-meta">נשאלה לאחרונה: {show_date(questions[0]["date"])}</div>',
+                unsafe_allow_html=True,
+            )
+            if len(questions) > 1:
+                with st.expander(f"כל הניסוחים ({len(questions)})"):
+                    for item in questions:
+                        st.write(f"{show_date(item['date'])} – {item['question']}")
+
+
 def main() -> None:
     st.set_page_config(page_title="הבוט של אתר הפניקס", page_icon="💬", layout="wide")
     load_css()
+    if st.query_params.get("view") == "gaps":
+        render_gaps_page()
+        return
     init_state()
     render_homepage()
 
