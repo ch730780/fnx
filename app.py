@@ -1,7 +1,10 @@
 """Streamlit chat UI for the Phoenix (fnx.co.il) website bot."""
 
 import base64
+import json
 import logging
+from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 import streamlit as st
@@ -14,6 +17,8 @@ ASSETS = Path(__file__).parent / "assets"
 CSS_PATH = ASSETS / "style.css"
 HOME_PATH = ASSETS / "home.html"
 LOGO_PATH = ASSETS / "fnx-logo.png"
+REFRESH_REPORT = Path(__file__).parent / "data" / "last_refresh.json"
+CHUNKS_PATH = Path(__file__).parent / "data" / "chunks.jsonl"
 CUSTOMER_SERVICE_URL = "https://www.fnx.co.il/customer-service/"
 ERROR_MESSAGE = "משהו השתבש, נסי שוב בעוד רגע."
 LIMIT_MESSAGE = "הגעת למגבלת השאלות לשיחה. תודה שניסית את הבוט!"
@@ -23,6 +28,7 @@ NOT_FOUND_TITLES = {
     "personal": "מידע אישי לא מופיע באתר",
     "advice": "ייעוץ אישי לא מופיע באתר",
     "off_topic": "הנושא לא מופיע באתר",
+    "unclear": "המידע לא מופיע באתר",
 }
 
 logger = logging.getLogger(__name__)
@@ -110,10 +116,27 @@ def render_chat_header() -> None:
         st.button(":material/close:", key="close_chat", help="סגירת הצ'אט", on_click=close_chat)
 
 
+@lru_cache(maxsize=1)
+def data_date() -> str:
+    """The date the site content was collected, e.g. "21.10.2026": from the last refresh report,
+    or (before the first refresh) the newest page in the chunks. "" if neither can be read."""
+    try:
+        try:
+            collected_at = json.loads(REFRESH_REPORT.read_text(encoding="utf-8"))["refreshed_at"]
+        except (OSError, ValueError, KeyError):
+            with CHUNKS_PATH.open(encoding="utf-8") as f:
+                collected_at = max(json.loads(line)["fetched_at"] for line in f)
+        return datetime.fromisoformat(collected_at).strftime("%d.%m.%Y")
+    except (OSError, ValueError, KeyError):
+        return ""
+
+
 def render_disclaimer() -> None:
+    date = data_date()
+    date_line = f"<br>המידע נאסף מהאתר בתאריך {date}." if date else ""
     st.markdown(
         f"""<div class="chat-disclaimer">{INFO_SVG}
-<p>זהו אינו שירות רשמי של הפניקס, והתשובות אינן מהוות ייעוץ אישי.</p>
+<p>זהו אינו שירות רשמי של הפניקס, והתשובות אינן מהוות ייעוץ אישי.{date_line}</p>
 </div>""",
         unsafe_allow_html=True,
     )

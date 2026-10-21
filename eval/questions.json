@@ -38,5 +38,11 @@
   {"id": 37, "type": "שיחה ארוכה + החלפת נושא", "question": "ותוך כמה זמן מתבצע ניוד?", "expect": "answer", "url": "ishtalmutfund", "follow_up": true},
   {"id": 38, "type": "שיחה ארוכה + החלפת נושא", "question": "ומה לגבי ביטוח נסיעות לחו\"ל?", "expect": "answer", "url": "travel-insurance", "follow_up": true},
   {"id": 39, "type": "שיחה ארוכה + החלפת נושא", "question": "ואפשר להוסיף ספורט אתגרי?", "expect": "answer", "url": "travel-insurance", "follow_up": true},
-  {"id": 40, "type": "שיחה ארוכה + החלפת נושא", "question": "ובקרן ההשתלמות, אפשר לבצע ניוד חלקי?", "expect": "answer", "url": "ishtalmutfund", "follow_up": true}
+  {"id": 40, "type": "שיחה ארוכה + החלפת נושא", "question": "ובקרן ההשתלמות, אפשר לבצע ניוד חלקי?", "expect": "answer", "url": "ishtalmutfund", "follow_up": true},
+  {"id": 41, "type": "תסריט מההנחיות", "question": "יש לי נזילה בבית, איך אני מגישה תביעה?", "expect": "answer", "url": "apartment"},
+  {"id": 42, "type": "תסריט מההנחיות", "question": "ותוך כמה זמן מקבלים תשובה?", "expect": "answer", "url": "apartment", "follow_up": true},
+  {"id": 43, "type": "תסריט מההנחיות - הצעה", "question": "האם הפוליסה שלי מכסה את זה?", "expect": "refuse", "reason": "personal", "follow_up": true},
+  {"id": 44, "type": "תסריט מההנחיות - הסכמה", "question": "כן", "expect": "answer", "url": "apartment", "follow_up": true},
+  {"id": 45, "type": "סירוב - שאלה עמומה", "question": "כמה זה עולה?", "expect": "refuse", "reason": "unclear"},
+  {"id": 46, "type": "סירוב - תחום רחב בלי סקירה באתר", "question": "ביטוח?", "expect": "refuse", "reason": "unclear"}
 ]
