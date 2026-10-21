@@ -5,10 +5,12 @@ app.py calls answer(question, history). Try it from the terminal: python -m rag.
 import json
 import logging
 import sys
+from threading import Thread
 
 import openai
 
 import config
+from rag.gaps import save_gap
 from rag.prompts import REWRITE_PROMPT, SYSTEM_PROMPT
 from rag.retrieve import clients, retrieve
 
@@ -81,10 +83,18 @@ def ask_model(messages: list[dict]) -> dict:
         return call(config.FALLBACK_MODEL)
 
 
-def answer(question: str, history: list[dict]) -> dict:
-    """Answer one chat question: {"answer": str, "sources": [{"title", "url"}], "answerable": bool}."""
+def answer(question: str, history: list[dict], save_gaps: bool = False) -> dict:
+    """Answer one chat question. save_gaps=True (the live chat) keeps questions the site doesn't answer."""
     full_question = standalone_question(question, history)
-    chunks = [chunk for chunk in retrieve(full_question) if chunk["score"] >= config.MIN_RELEVANCE]
+    result = answer_full_question(full_question)
+    if save_gaps and result.get("reason") == "not_found":
+        Thread(target=save_gap, args=(full_question,), daemon=True).start()   # in the background: no extra wait
+    return result
+
+
+def answer_full_question(full_question: str) -> dict:
+    """Answer a standalone question: {"answer": str, "sources": [{"title", "url"}], "answerable": bool}."""
+    chunks =[chunk for chunk in retrieve(full_question) if chunk["score"] >= config.MIN_RELEVANCE]
 
     result = ask_model([
         {"role": "system", "content": SYSTEM_PROMPT},

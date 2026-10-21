@@ -13,6 +13,7 @@ load_dotenv()  # locally: reads .env; in the cloud: no-op
 # API keys: read from environment variables (works locally, on Streamlit Cloud and on AWS)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")   # opens the content-gaps page (?view=gaps)
 
 # Site
 BASE_URL = "https://www.fnx.co.il"
@@ -30,6 +31,7 @@ RERANK_MODEL = "gpt-4.1-mini"  # scores how well each found chunk answers the qu
 
 # Pinecone
 PINECONE_INDEX = "fnx"
+GAPS_NAMESPACE = "content-gaps"  # unanswered questions, kept apart from the site chunks in the same index
 
 # Retrieval
 TOP_K = 20                     # candidates from the first search
