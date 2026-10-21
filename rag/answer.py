@@ -106,8 +106,10 @@ def answer(question: str, history: list[dict]) -> dict:
     if result.get("coverage") not in ("full", "partial") or not used or not result.get("answer"):
         return refusal("not_found")
 
-    sources = {chunk["url"]: {"title": chunk["title"], "url": chunk["url"]} for chunk in used}
-    return {"answer": result["answer"], "sources": list(sources.values())[:MAX_SOURCES], "answerable": True}
+    sources = list({chunk["url"]: {"title": chunk["title"], "url": chunk["url"]} for chunk in used}.values())[:MAX_SOURCES]
+    if result.get("main_found") is False:   # the main thing asked is not on the site: a "not found" card, with what the site does say
+        return {"answer": result["answer"], "sources": sources, "answerable": False, "reason": "not_found"}
+    return {"answer": result["answer"], "sources": sources, "answerable": True}
 
 
 if __name__ == "__main__":

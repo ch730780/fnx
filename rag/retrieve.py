@@ -2,6 +2,7 @@
 
 Used by rag/answer.py. Try it from the terminal: python -m rag.retrieve "<question>"
 """
+import json
 import logging
 import sys
 from functools import lru_cache
@@ -10,8 +11,7 @@ from openai import OpenAI
 from pinecone import Pinecone
 
 import config
-
-RERANK_MODEL = "bge-reranker-v2-m3"   # Pinecone's hosted multilingual reranker
+from rag.prompts import RERANK_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,23 @@ def clients():
     """Connect to OpenAI and Pinecone once per process."""
     pc = Pinecone(api_key=config.PINECONE_API_KEY)
     return OpenAI(api_key=config.OPENAI_API_KEY), pc, pc.Index(config.PINECONE_INDEX)
+
+
+def rerank(openai_client, question: str, candidates: list[dict]) -> list[dict]:
+    """Ask a small model how well each candidate answers the question (0-10), keep the best."""
+    chunks = "\n\n".join(f"[{n}] {chunk['text']}" for n, chunk in enumerate(candidates, start=1))
+    response = openai_client.chat.completions.create(
+        model=config.RERANK_MODEL,
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": RERANK_PROMPT},
+            {"role": "user", "content": f"שאלה: {question}\n\nקטעים:\n{chunks}"},
+        ],
+    )
+    scores = json.loads(response.choices[0].message.content)["scores"]   # {"1": 10, "2": 0, ...}
+    scored = [{**chunk, "score": scores.get(str(n), 0) / 10} for n, chunk in enumerate(candidates, start=1)]
+    return sorted(scored, key=lambda chunk: chunk["score"], reverse=True)[:config.RERANK_TOP_N]
 
 
 def retrieve(question: str) -> list[dict]:
@@ -36,18 +53,10 @@ def retrieve(question: str) -> list[dict]:
         return candidates[:config.RERANK_TOP_N]
 
     try:
-        reranked = pc.inference.rerank(
-            model=RERANK_MODEL,
-            query=question,
-            documents=[chunk["text"] for chunk in candidates],
-            top_n=config.RERANK_TOP_N,
-            return_documents=False,
-            parameters={"truncate": "END"},   # a chunk longer than the model's limit is cut, not rejected
-        )
+        return rerank(openai_client, question, candidates)
     except Exception:
         logger.exception("rerank failed - using the vector search order")
-        return candidates[:config.RERANK_TOP_N]
-    return [{**candidates[row.index], "score": row.score} for row in reranked.data]
+        return [{**chunk, "score": 1.0} for chunk in candidates[:config.RERANK_TOP_N]]   # no rerank score: let the answer model judge
 
 
 if __name__ == "__main__":

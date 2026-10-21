@@ -162,10 +162,11 @@ def render_sources(sources: list[dict]) -> None:
         st.markdown(f"🔗 [{source['title']}]({source['url']})")
 
 
-def render_not_found(text: str, index: int, reason: str | None) -> None:
-    """Card for questions the website does not answer, titled by the reason."""
+def render_not_found(text: str, index: int, reason: str | None, sources: list[dict]) -> None:
+    """Card for questions the website does not answer, titled by the reason, with related links if any."""
     title = NOT_FOUND_TITLES.get(reason, NOT_FOUND_TITLES["not_found"])
     st.info(f"**{title}**\n\n{text}", icon="ℹ️")
+    render_sources(sources)
     st.link_button("פנייה לשירות לקוחות", CUSTOMER_SERVICE_URL, key=f"service_{index}")
 
 
@@ -180,7 +181,7 @@ def render_message(message: dict, index: int) -> None:
             st.markdown(message["content"])
             render_sources(message["sources"])
         else:
-            render_not_found(message["content"], index, message.get("reason"))
+            render_not_found(message["content"], index, message.get("reason"), message["sources"])
 
 
 def ask_bot(question: str, history: list[dict]) -> dict:
