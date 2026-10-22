@@ -14,12 +14,15 @@ SIMILAR = 0.68  # measured: rewordings of one question 0.70-0.91; different topi
 logger = logging.getLogger(__name__)
 
 
-def save_gap(question: str) -> None:
-    """Store one unanswered question with its meaning vector. Never raises: the user already got the answer."""
+def save_gap(question: str, meaning: str) -> None:
+    """Store one unanswered question as the user typed it, with the meaning vector of its full (rewritten) form.
+
+    The full form groups follow-ups like "and for cats?" correctly. Never raises: the user already got the answer.
+    """
     question = question.strip().strip('"\'״“”').strip()   # pasted questions often come with quotes or blank lines
     try:
         openai_client, _, index = clients()
-        vector = openai_client.embeddings.create(model=config.EMBEDDING_MODEL, input=question).data[0].embedding
+        vector = openai_client.embeddings.create(model=config.EMBEDDING_MODEL, input=meaning).data[0].embedding
         index.upsert(vectors=[{"id": str(uuid.uuid4()), "values": vector,
                                "metadata": {"question": question, "date": date.today().isoformat()}}],
                      namespace=config.GAPS_NAMESPACE)
