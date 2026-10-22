@@ -282,7 +282,7 @@ def render_gaps_page() -> None:
         with st.container(key=f"gap_{rank}"):
             st.markdown(
                 f'<div class="gap-title"><span class="gap-count">{len(questions)}</span>'
-                f'{escape(group["questions"][0]["question"])}</div>'
+                f'{escape(group["title"])}</div>'
                 f'<div class="gap-meta">נשאלה לאחרונה: {show_date(questions[0]["date"])}</div>',
                 unsafe_allow_html=True,
             )
