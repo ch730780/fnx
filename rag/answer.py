@@ -88,7 +88,7 @@ def answer(question: str, history: list[dict], save_gaps: bool = False) -> dict:
     full_question = standalone_question(question, history)
     result = answer_full_question(full_question)
     if save_gaps and result.get("reason") == "not_found":
-        Thread(target=save_gap, args=(full_question,), daemon=True).start()   # in the background: no extra wait
+        Thread(target=save_gap, args=(question, full_question), daemon=True).start()   # in the background: no extra wait
     return result
 
 
