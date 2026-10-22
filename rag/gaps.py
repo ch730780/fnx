@@ -9,22 +9,25 @@ from datetime import date
 import config
 from rag.retrieve import clients
 
-SIMILAR = 0.75  # measured: rewordings 0.70-0.93; same-template prices of other products 0.71-0.72 (car vs cat), so 0.68 joined them
+SIMILAR = 0.75  # measured on typed text: rewordings 0.89-0.93; prices of other products 0.53-0.57 (car vs cat)
 
 logger = logging.getLogger(__name__)
 
 
 def save_gap(question: str, meaning: str) -> None:
-    """Store one unanswered question as the user typed it, with the meaning vector of its full (rewritten) form.
+    """Store one unanswered question as the user typed it, grouped by the meaning of that same text.
 
-    The full form groups follow-ups like "and for cats?" correctly. Never raises: the user already got the answer.
+    The rewritten form (meaning) is kept only for debugging: the rewrite pulls in earlier topics of the chat,
+    e.g. a car question came out closer to a cat question (0.748) than to its own rewording (0.720).
+    Never raises: the user already got the answer.
     """
     question = question.strip().strip('"\'״“”').strip()   # pasted questions often come with quotes or blank lines
     try:
         openai_client, _, index = clients()
-        vector = openai_client.embeddings.create(model=config.EMBEDDING_MODEL, input=meaning).data[0].embedding
+        vector = openai_client.embeddings.create(model=config.EMBEDDING_MODEL, input=question).data[0].embedding
         index.upsert(vectors=[{"id": str(uuid.uuid4()), "values": vector,
-                               "metadata": {"question": question, "date": date.today().isoformat()}}],
+                               "metadata": {"question": question, "meaning": meaning,
+                                            "date": date.today().isoformat()}}],
                      namespace=config.GAPS_NAMESPACE)
     except Exception:
         logger.exception("saving a content gap failed")
